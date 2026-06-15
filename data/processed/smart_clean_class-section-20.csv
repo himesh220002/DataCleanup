@@ -1,0 +1,21 @@
+ID,Section,Name,Home Tuition (Y/N),Class,Rank,Attendance (%),Unit Test 1,Unit Test 2,Unit Test 3,Focus (0‑10),Homework (0‑10),Q&A (0‑10),Doubt Asking Rate,Exam Prep (0‑10),Special Problems Completion (%)
+S001,A,Rahul Sharma,Y,8,5,92,78,81,85,8,9,7,0.6,8,80
+S002,B,Priya Das,N,8,3,95,88,90,92,9,8,9,0.7,9,90
+S003,C,Arjun Mehta,Y,8,10,85,70,75,72,7,6,6,0.4,7,65
+S004,A,Sneha Roy,N,9,2,97,92,94,95,9,9,10,0.8,10,95
+S005,B,Karan Gupta,Y,9,12,80,65,68,70,6,7,5,0.3,6,55
+S006,C,Ananya Singh,N,9,1,99,95,96,98,10,10,9,0.9,10,98
+S007,A,Rohan Verma,Y,8,8,88,75,78,80,7,8,7,0.5,8,70
+S008,B,Meera Iqbal,N,8,6,91,82,85,83,8,9,8,0.6,9,85
+S009,C,Aditya Kumar,Y,9,15,76,60,62,65,5,6,4,0.2,5,50
+S010,A,Neha Patel,N,9,4,94,89,87,90,9,8,9,0.7,9,92
+S011,B,Vivek Rao,Y,8,11,82,68,70,72,6,7,6,0.4,7,60
+S012,C,Simran Kaur,N,9,7,90,80,82,84,8,9,8,0.6,8,78
+S013,A,Aman Joshi,Y,8,14,78,62,65,68,6,6,5,0.3,6,55
+S014,B,Riya Sen,N,9,9,87,74,76,79,7,8,7,0.5,8,72
+S015,C,Dev Malhotra,Y,9,13,79,64,67,69,6,7,5,0.3,6,58
+S016,A,Tanya Kapoor,N,8,16,75,58,60,63,5,6,4,0.2,5,48
+S017,B,Aarav Jain,Y,9,18,70,55,57,60,4,5,3,0.1,4,40
+S018,C,Ishita Bose,N,8,17,72,57,59,62,5,6,4,0.2,5,45
+S019,A,Manav Khanna,Y,9,19,68,52,54,56,4,5,3,0.1,4,38
+S020,C,Pooja Nair,N,9,20,65,50,52,55,3,4,2,0.1,3,35

@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Cleaning Project Architecture</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <style>
@@ -39,6 +40,12 @@
         th {
             background: #3498db;
             color: #fff;
+        }
+
+        .pre {
+            background: #eee;
+            padding: 10px;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -290,7 +297,7 @@
             T --> T5["Performance Testing (PT)<br>Places: tests/performance/"]
             T --> T6["Validation Testing (VT)<br>Places: tests/validation/"]
             T --> T7["User Acceptance (UAT)<br>Places: tests/uat/"]
-            
+
             style T1 fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff,font-weight:bold
             style T2 fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff,font-weight:bold
             style T3 fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff,font-weight:bold
@@ -304,33 +311,34 @@
     <!-- Test Tree & Findings -->
     <div class="diagram">
         <h2>✅ 🌲 Test Tree & Case Findings</h2>
-        <p>The 7-layer testing suite has been fully executed, resolving previous module errors and missing value handler logic gaps. Currently, <strong>100% of pipeline tests pass (8/8)</strong> with zero warnings.</p>
+        <p>The 7-layer testing suite has been fully executed, resolving previous module errors and missing value handler
+            logic gaps. Currently, <strong>100% of pipeline tests pass (8/8)</strong> with zero warnings.</p>
         <div class="mermaid">
             graph TD
             ROOT["tests/ (100% Passed)"]
-            
+
             ROOT --> UNIT["unit/"]
             UNIT --> U1["test_impute_numerical: PASSED ✅<br>Validates median/mode replacement"]
             UNIT --> U2["test_impute_time_series: PASSED ✅<br>Validates sequential fill operations"]
-            
+
             ROOT --> INT["integration/"]
             INT --> I1["test_full_pipeline_execution: PASSED ✅<br>Validates duplicate drop & module chaining"]
-            
+
             ROOT --> SYS["system/"]
             SYS --> S1["test_csv_ingestion_system: PASSED ✅<br>Validates E2E file reading pipeline"]
-            
+
             ROOT --> REG["regression/"]
             REG --> R1["test_zscore_regression: PASSED ✅<br>Protects baseline Z-score outlier rules"]
-            
+
             ROOT --> PERF["performance/"]
             PERF --> P1["test_performance_scaling: PASSED ✅<br>Ensures pipeline memory/speed stability"]
-            
+
             ROOT --> VAL["validation/"]
             VAL --> V1["test_schema_constraints: PASSED ✅<br>Checks datatype schema enforcement"]
-            
+
             ROOT --> UAT["uat/"]
             UAT --> UAT1["test_client_use_case: PASSED ✅<br>Simulates medical record cleaning rules"]
-            
+
             style ROOT fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff,font-weight:bold
             style UNIT fill:#bbdefb,stroke:#1976d2,color:#000
             style INT fill:#bbdefb,stroke:#1976d2,color:#000
@@ -339,7 +347,7 @@
             style PERF fill:#bbdefb,stroke:#1976d2,color:#000
             style VAL fill:#bbdefb,stroke:#1976d2,color:#000
             style UAT fill:#bbdefb,stroke:#1976d2,color:#000
-            
+
             style U1 fill:#e8f5e9,stroke:#388e3c,color:#000
             style U2 fill:#e8f5e9,stroke:#388e3c,color:#000
             style I1 fill:#e8f5e9,stroke:#388e3c,color:#000
@@ -357,16 +365,18 @@
         <h2>📚 Project Documentation & Quick Start</h2>
         <h3>1️⃣ Running the Interactive Web UI (Frontend)</h3>
         <p>We built a powerful <strong>Streamlit</strong> application to run the pipeline without writing any code.</p>
-        <pre style="background: #eee; padding: 10px; border-radius: 5px;"><code># Activate the virtual environment
+        <pre class="pre"><code># Activate the virtual environment
 source venv/bin/activate
 
 # Launch the Frontend Web UI
 streamlit run app.py</code></pre>
-        <p>This will open a browser window where you can upload datasets, tweak pipeline settings, and download the cleaned CSV instantly.</p>
+        <p>This will open a browser window where you can upload datasets, tweak pipeline settings, and download the
+            cleaned CSV instantly.</p>
 
         <h3>2️⃣ Running the Tagged Testing Suite</h3>
-        <p>To guarantee a <strong>near-zero margin of error</strong>, the project features a massive 7-layer testing hierarchy. We use Pytest markers to track coverage.</p>
-        <pre style="background: #eee; padding: 10px; border-radius: 5px;"><code># Run ALL Tests
+        <p>To guarantee a <strong>near-zero margin of error</strong>, the project features a massive 7-layer testing
+            hierarchy. We use Pytest markers to track coverage.</p>
+        <pre class="pre"><code># Run ALL Tests
 pytest tests/
 
 # Run ONLY Unit Tests
@@ -374,14 +384,15 @@ pytest tests/unit/
 
 # Run a Specific Tag (e.g., Integration Pipeline Tests)
 pytest -m IT_preprocessing_pipeline</code></pre>
-        
+
         <h3>3️⃣ Testing Folder Hierarchy & Tags</h3>
         <ul>
             <li><code>tests/unit/</code> - <strong>Tag: UT_...</strong> | Validates individual cleaning functions.</li>
             <li><code>tests/integration/</code> - <strong>Tag: IT_...</strong> | Validates module chaining.</li>
             <li><code>tests/system/</code> - <strong>Tag: ST_...</strong> | Validates end-to-end file parsing.</li>
             <li><code>tests/regression/</code> - <strong>Tag: RT_...</strong> | Protects old logic from new bugs.</li>
-            <li><code>tests/performance/</code> - <strong>Tag: PT_...</strong> | Stress tests memory/speed constraints.</li>
+            <li><code>tests/performance/</code> - <strong>Tag: PT_...</strong> | Stress tests memory/speed constraints.
+            </li>
             <li><code>tests/validation/</code> - <strong>Tag: VT_...</strong> | Validates business schema rules.</li>
             <li><code>tests/uat/</code> - <strong>Tag: UAT_...</strong> | Validates client-specific case studies.</li>
         </ul>
