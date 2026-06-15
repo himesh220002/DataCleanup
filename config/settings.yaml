@@ -1,0 +1,11 @@
+# Project settings
+
+data:
+  raw_dir: ../data/raw/
+  processed_dir: ../data/processed/
+
+model:
+  saved_models_dir: ../models/saved_models/
+
+logging:
+  log_dir: ../reports/logs/
