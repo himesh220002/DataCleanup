@@ -1,3 +1,10 @@
-Class,Section,Name,ID,Rank,Attendance (%),Unit Test 1,Unit Test 2,Unit Test 3,Home Tuition (Y/N),Focus (0-10),Homework (0-10),Q&A (0-10),Doubt Asking Rate,Exam Prep (0-10),Special Problems Completion (%)
-8,A,Rahul Sharma,S001,5,92,78,81,85,Y,8,9,7,0.6,8,80
-8,B,Sneha Roy,S004,2,97,92,94,95,N,9,9,10,0.8,10,95
+Class,Section,Subject,Name,ID,Rank,Attendance (%),Unit Test 1,Unit Test 2,Unit Test 3,Home Tuition (Y/N),Focus (0-10),Homework (0-10),Q&A (0-10),Doubt Asking Rate,Exam Prep (0-10),Special Problems Completion (%)
+8,A,Maths,Rahul Sharma,S001,5,92,78,81,85,Y,8,9,7,0.6,8,80
+8,B,Science,Sneha Roy,S004,2,97,92,94,95,N,9,9,10,0.8,10,95
+8,A,Language,Rahul Sharma,S001,3,95,85,88,90,N,7,8,6,0.4,7,75
+8,B,Maths,Sneha Roy,S004,1,98,95,96,98,N,10,10,9,0.9,10,98
+8,A,Science,Aarav Patel,S002,12,85,65,68,72,Y,6,7,5,0.3,6,60
+8,A,Social,Aarav Patel,S002,8,88,75,78,80,Y,7,8,6,0.5,7,70
+8,B,Arts,Diya Singh,S005,1,95,98,95,96,N,9,10,8,0.7,9,90
+8,A,Physical,Kabir Khan,S003,4,90,88,85,90,N,8,8,7,0.6,8,85
+8,B,Language,Kabir Khan,S003,15,75,55,60,65,Y,5,6,4,0.2,5,50

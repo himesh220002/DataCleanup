@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+import plotly.express as px
 import os
 import sys
 
@@ -138,6 +139,12 @@ if 'student_results' in st.session_state:
         selected_sections = st.sidebar.multiselect("Select Section", options=sections, default=sections)
     else:
         selected_sections = []
+        
+    if 'Subject' in df_smart.columns:
+        subjects = sorted(df_smart['Subject'].dropna().unique().tolist())
+        selected_subjects = st.sidebar.multiselect("Select Subject", options=subjects, default=subjects)
+    else:
+        selected_subjects = []
 
     # Apply Filters
     df_filtered = df_smart.copy()
@@ -145,6 +152,8 @@ if 'student_results' in st.session_state:
         df_filtered = df_filtered[df_filtered['Class'].isin(selected_classes)]
     if selected_sections and 'Section' in df_filtered.columns:
         df_filtered = df_filtered[df_filtered['Section'].isin(selected_sections)]
+    if selected_subjects and 'Subject' in df_filtered.columns:
+        df_filtered = df_filtered[df_filtered['Subject'].isin(selected_subjects)]
         
     if df_filtered.empty:
         st.warning("No students match the selected filters.")
@@ -184,7 +193,7 @@ if 'student_results' in st.session_state:
                 )
                 
                 # Reorder columns for display
-                avail_cols = [c for c in ['ID', 'Name', 'Class', 'Section', 'Attendance (%)', 'Unit Test 3', 'Avg Test Score', 'Engagement Index', 'Intervention Recommendation'] if c in at_risk.columns]
+                avail_cols = [c for c in ['ID', 'Name', 'Class', 'Section', 'Subject', 'Attendance (%)', 'Unit Test 3', 'Avg Test Score', 'Engagement Index', 'Intervention Recommendation'] if c in at_risk.columns]
                 st.dataframe(at_risk[avail_cols], use_container_width=True)
             else:
                 st.success("No students are currently marked as at-risk in this filtered view.")
@@ -235,6 +244,26 @@ if 'student_results' in st.session_state:
         st.markdown("Download the filtered subset along with the calculated Engagement Index and Intervention tracking.")
         
         # Add Intervention Recommendation to main dataframe for download
+        
+        # Custom sorting: Class DESC, Section ASC, Subject Custom, Name ASC
+        if all(col in df_filtered.columns for col in ['Class', 'Section', 'Subject', 'Name']):
+            # Create a categorical type for Subject to enforce custom order
+            subject_order = ['Maths', 'Science', 'English', 'Language', 'Social', 'Arts', 'Physical']
+            
+            # Identify any existing subjects not in the predefined list and append them
+            existing_subjects = df_filtered['Subject'].dropna().unique().tolist()
+            for subj in existing_subjects:
+                if subj not in subject_order:
+                    subject_order.append(subj)
+
+            df_filtered['Subject_Cat'] = pd.Categorical(df_filtered['Subject'], categories=subject_order, ordered=True)
+            
+            df_filtered = df_filtered.sort_values(
+                by=['Class', 'Section', 'Subject_Cat', 'Name'],
+                ascending=[False, True, True, True]
+            )
+            df_filtered = df_filtered.drop(columns=['Subject_Cat'])
+
         df_download = df_filtered.copy().reset_index(drop=True)
         df_download.index = df_download.index + 1
         if 'Attendance (%)' in df_download.columns and 'Unit Test 3' in df_download.columns:
@@ -243,7 +272,104 @@ if 'student_results' in st.session_state:
                 if (row['Attendance (%)'] < 75 or row['Unit Test 3'] < 70) else "On Track", axis=1
              )
         
-        st.dataframe(df_download.head(10), use_container_width=True)
+        st.markdown("**Select a student row below to view their detailed performance radar (Circular Potential Zones):**")
+        
+        event = st.dataframe(
+            df_download, 
+            use_container_width=True, 
+            selection_mode="single-row", 
+            on_select="rerun", 
+            key="student_selection"
+        )
+        
+        selected_rows = getattr(event, 'selection', event).rows if hasattr(getattr(event, 'selection', event), 'rows') else event.selection.rows # type: ignore
+        if selected_rows:
+            selected_idx = selected_rows[0]
+            if selected_idx < len(df_download):
+                student_data = df_download.iloc[selected_idx]
+                
+                st.markdown("---")
+                st.subheader(f"🎯 Detailed View: {student_data.get('Name', 'Unknown')} ({student_data.get('Subject', 'Overall')})")
+                
+                # Prepare data for Radar Chart
+                
+                def get_col_val(keyword, default=0):
+                    cols = [c for c in student_data.index if keyword in c]
+                    return student_data[cols[0]] if cols else default
+                    
+                # Scale metrics out of 100
+                metrics = {
+                    'Attendance': get_col_val('Attendance'),
+                    'Avg Test Score': student_data.get('Avg Test Score', 0),
+                    'Focus (Scaled)': get_col_val('Focus') * 10,
+                    'Homework (Scaled)': get_col_val('Homework') * 10,
+                    'Q&A (Scaled)': get_col_val('Q&A') * 10,
+                    'Exam Prep (Scaled)': get_col_val('Exam Prep') * 10,
+                    'Special Problems': get_col_val('Special Problems Completion')
+                }
+                
+                # Filter out any metrics that don't exist in the df
+                valid_metrics = {k: v for k, v in metrics.items() if pd.notnull(v)}
+                
+                if valid_metrics:
+                    radar_df = pd.DataFrame(dict(
+                        r=list(valid_metrics.values()),
+                        theta=list(valid_metrics.keys())
+                    ))
+                    
+                    fig = px.line_polar(radar_df, r='r', theta='theta', line_close=True, range_r=[0,100], 
+                                        color_discrete_sequence=['#00f2fe'])
+                    fig.update_traces(fill='toself', fillcolor='rgba(0, 242, 254, 0.2)')
+                    fig.update_layout(
+                        polar=dict(
+                            radialaxis=dict(visible=True, range=[0, 100])
+                        ),
+                        showlegend=False,
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        font=dict(color='white')
+                    )
+                    
+                    # 2nd Graph: Cross-Subject Scoring
+                    all_subjects_df = df_smart[df_smart['Name'] == student_data.get('Name', '')].copy()
+                    fig_subj = None
+                    
+                    if not all_subjects_df.empty and 'Subject' in all_subjects_df.columns and 'Avg Test Score' in all_subjects_df.columns:
+                        subj_scores = all_subjects_df.groupby('Subject')['Avg Test Score'].mean().reset_index()
+                        
+                        fig_subj = px.line_polar(subj_scores, r='Avg Test Score', theta='Subject', line_close=True, range_r=[0,100],
+                                                 color_discrete_sequence=['#ff007f'])
+                        fig_subj.update_traces(fill='toself', fillcolor='rgba(255, 0, 127, 0.2)')
+                        fig_subj.update_layout(
+                            polar=dict(
+                                radialaxis=dict(visible=True, range=[0, 100])
+                            ),
+                            showlegend=False,
+                            paper_bgcolor='rgba(0,0,0,0)',
+                            plot_bgcolor='rgba(0,0,0,0)',
+                            font=dict(color='white')
+                        )
+                    
+                    col_r1, col_r2, col_r3 = st.columns([1.5, 1.5, 1])
+                    with col_r1:
+                        st.markdown("**Personal Potential Zones**")
+                        st.plotly_chart(fig, use_container_width=True)
+                    with col_r2:
+                        st.markdown("**Cross-Subject Scores**")
+                        if fig_subj:
+                            st.plotly_chart(fig_subj, use_container_width=True)
+                        else:
+                            st.info("No cross-subject data available.")
+                    with col_r3:
+                        st.write("### Quick Stats")
+                        st.write(f"**Class:** {student_data.get('Class', 'N/A')}")
+                        st.write(f"**Section:** {student_data.get('Section', 'N/A')}")
+                        st.write(f"**Subject:** {student_data.get('Subject', 'N/A')}")
+                        st.write(f"**Rank:** {student_data.get('Rank', 'N/A')}")
+                        st.write(f"**Engagement Index:** {student_data.get('Engagement Index', 0):.1f}/100")
+                        st.info(student_data.get('Intervention', 'On Track'))
+                else:
+                    st.warning("Insufficient data to plot radar chart.")
         
         csv_data = df_download.to_csv(index=False).encode('utf-8')
         st.download_button(
