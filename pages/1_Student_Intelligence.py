@@ -321,7 +321,7 @@ if 'student_results' in st.session_state:
         
         df_display = df_download.copy()
         if search_query:
-            search_query = str(search_query).lower()
+            search_query = search_query.lower()
             if 'Roll Number' in df_display.columns:
                 df_display = df_display[
                     df_display['Name'].str.lower().str.contains(search_query, na=False) | 
