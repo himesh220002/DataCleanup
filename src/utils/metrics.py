@@ -1,6 +1,8 @@
 import torch # type: ignore
 import numpy as np # type: ignore
 from sklearn.metrics import classification_report, confusion_matrix # type: ignore
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt # type: ignore
 import seaborn as sns # type: ignore
 from typing import List, Tuple
