@@ -15,21 +15,26 @@ with tab1:
     st.header("Student Intelligence Synthetic Data")
     st.markdown("Generates a comprehensive school-wide dataset containing randomized student profiles, grades, and engagement metrics.")
     
+    st.markdown("### ⚙️ Dynamic Configuration")
     col1, col2 = st.columns(2)
     with col1:
-        max_students = st.number_input("Max Students per Section", min_value=1, max_value=100, value=40)
+        max_students = st.number_input("Max Students per Section", min_value=1, max_value=500, value=40)
+        classes_input = st.text_input("Classes (comma-separated)", value="8, 9, 10, 11, 12")
+        junior_sub_input = st.text_input("Junior Subjects (Class <= 10)", value="Maths, Science, Social, English, Hindi, Arts")
     with col2:
         output_filename = st.text_input("Output Filename", value="complete_school_dataset.csv")
+        sections_input = st.text_input("Sections (comma-separated)", value="A, B, C")
+        senior_sub_input = st.text_input("Senior Subjects (Class > 10)", value="Maths, Physics, Chemistry, Biology, English, Social, Painting")
         
     if st.button("🚀 Generate Student Dataset", type="primary"):
         with st.spinner("Generating complex school hierarchy..."):
-            # 1. School Structure Setup
-            classes = [8, 9, 10, 11, 12]
-            sections = ['A', 'B', 'C']
+            # 1. School Structure Setup (Parsed dynamically from user input)
+            classes = [int(c.strip()) for c in classes_input.split(',') if c.strip().isdigit()]
+            sections = [s.strip() for s in sections_input.split(',') if s.strip()]
             
             # Subject Pools
-            class_10_subjects = ['Maths', 'Science', 'Social', 'English', 'Hindi', 'Arts']
-            high_school_subjects = ['Maths', 'Physics', 'Chemistry', 'Biology', 'English', 'Social', 'Painting']
+            class_10_subjects = [s.strip() for s in junior_sub_input.split(',') if s.strip()]
+            high_school_subjects = [s.strip() for s in senior_sub_input.split(',') if s.strip()]
             
             # Names list to pull from randomly (combining first and last names)
             # 80 Unique First Names (Increased 4x)
@@ -84,8 +89,8 @@ with tab1:
                         student_num_padded = f"{student_num:02d}"
                         roll_number = f"{cls}{sec_digit}{student_num_padded}"
                         
-                        # Select the correct subject list based on the Class level
-                        subjects = class_10_subjects if cls == 10 else high_school_subjects
+                        # Select the correct subject list based on the Class level (<= 10 gets Junior subjects)
+                        subjects = class_10_subjects if cls <= 10 else high_school_subjects
                         
                         # Create a row for EACH subject for this unique student
                         for sub in subjects:
@@ -128,7 +133,7 @@ with tab1:
             # Display sample and provide download
             df = pd.DataFrame(all_rows)
             st.write("### Data Preview")
-            st.dataframe(df.head(15), use_container_width=True)
+            st.dataframe(df.head(15), width=None) # width=None replaces the deprecated use_container_width
             
             csv_data = df.to_csv(index=False).encode('utf-8')
             st.download_button(
