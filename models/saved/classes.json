@@ -1,1 +1,1 @@
-{"classes": ["cats", "elephants"], "arch": "ResNet50"}
+{"classes": ["cats", "elephants"], "arch": "EfficientNet-B0"}

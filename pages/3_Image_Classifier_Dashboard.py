@@ -227,6 +227,22 @@ with tab3:
                     else:
                         st.error("Low confidence. Model is uncertain.")
                         
+                    # --- Medical Report Generator ---
+                    if pred_class and any(tumor in str(pred_class).lower() for tumor in ["glioma", "meningioma", "pituitary", "notumor", "tumor"]):
+                        st.divider()
+                        st.markdown("### 🏥 Automated Medical Diagnostic Report")
+                        with st.container(border=True):
+                            st.markdown(f"**Scan Source:** User Upload")
+                            st.markdown(f"**Primary Finding:** `{str(pred_class).upper().replace('_', ' ')}`")
+                            st.markdown(f"**AI Confidence Level:** `{conf:.2f}%`")
+                            
+                            if "notumor" in str(pred_class).lower() or "no_tumor" in str(pred_class).lower():
+                                st.success("🟢 **Analysis:** No abnormal tumor masses detected in the provided scan. Routine follow-up recommended.")
+                            else:
+                                st.error(f"🔴 **Analysis:** Abnormal `{str(pred_class).replace('_', ' ')}` mass detected. Immediate radiologist verification and biopsy recommended.")
+                                
+                            st.caption("*Disclaimer: This is an AI-assisted diagnostic tool. Final diagnoses must be confirmed by a licensed medical professional.*")
+                            
                 except Exception as e:
                     st.error(f"Inference Error: {e}")
         else:
