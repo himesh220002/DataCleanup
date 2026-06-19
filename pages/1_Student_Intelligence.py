@@ -4,6 +4,7 @@ import altair as alt
 import plotly.express as px
 import os
 import sys
+import openai
 
 # Ensure imports work from the root directory
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
@@ -107,6 +108,29 @@ if 'student_results' in st.session_state:
     filename = st.session_state['student_filename']
     
     # --- Feature Engineering ---
+    # --- Schema Normalization for Resiliency ---
+    col_map = {}
+    for c in df_smart.columns:
+        c_lower = c.lower().replace(' ', '').replace('_', '')
+        if 'attendence' in c_lower or 'attendance' in c_lower: col_map[c] = 'Attendance (%)'
+        elif 'unittest1' in c_lower or 'unit1' in c_lower: col_map[c] = 'Unit Test 1'
+        elif 'unittest2' in c_lower or 'unit2' in c_lower: col_map[c] = 'Unit Test 2'
+        elif 'unittest3' in c_lower or 'unit3' in c_lower: col_map[c] = 'Unit Test 3'
+        elif 'halfyrly' in c_lower or 'halfyearly' in c_lower: col_map[c] = 'Half Yearly'
+        elif c_lower == 'class': col_map[c] = 'Class'
+        elif c_lower == 'section': col_map[c] = 'Section'
+        elif c_lower == 'name': col_map[c] = 'Name'
+        elif c_lower == 'id': col_map[c] = 'ID'
+        elif c_lower == 'subject': col_map[c] = 'Subject'
+        elif 'hometution' in c_lower or 'hometuition' in c_lower: col_map[c] = 'Home Tuition (Y/N)'
+    df_smart = df_smart.rename(columns=col_map)
+    
+    # Standardize ID to be unique per Student, not per Row
+    if all(c in df_smart.columns for c in ['Class', 'Section', 'Name', 'ID']):
+        if df_smart.groupby(['Class', 'Section', 'Name'])['ID'].nunique().max() > 1:
+            group_id = df_smart.groupby(['Class', 'Section', 'Name']).ngroup() + 1
+            df_smart['ID'] = df_smart['Class'].astype(str) + "_" + df_smart['Section'].astype(str) + "_" + group_id.astype(str)
+
     # Engagement Index (Focus + Homework + Q&A)
     # Robustly find column names (handles non-breaking hyphens)
     focus_cols = [c for c in df_smart.columns if 'Focus' in c]
@@ -125,6 +149,27 @@ if 'student_results' in st.session_state:
     else:
         df_smart['Avg Test Score'] = 0.0
         
+    if all(c in df_smart.columns for c in ['Class', 'Section', 'Subject']):
+        df_smart['Rank'] = df_smart.groupby(['Class', 'Section', 'Subject'])['Avg Test Score'].rank(ascending=False, method='min').astype(int)
+    else:
+        df_smart['Rank'] = df_smart['Avg Test Score'].rank(ascending=False, method='min').astype(int)
+
+    def get_intervention(row):
+        avg_score = row.get('Avg Test Score', 100)
+        ut3_score = row.get('Unit Test 3', 40)
+        engagement = row.get('Engagement Index', 100)
+        risk_factors = []
+        if pd.notnull(avg_score) and avg_score < 50: risk_factors.append("Low Avg Score")
+        if pd.notnull(ut3_score) and ut3_score < 16: risk_factors.append("Low UT3")
+        if pd.notnull(engagement) and engagement < 40: risk_factors.append("Low Engagement")
+        if not risk_factors: return "On Track"
+        elif len(risk_factors) >= 2: return "Critical Risk: Parent-Teacher Meeting & Core Remedial"
+        elif "Low Engagement" in risk_factors: return "Behavioral Risk: Immediate Focus & Motivation Intervention"
+        elif "Low UT3" in risk_factors: return "Recent Drop: Extra Doubt Sessions for UT3 Concepts"
+        else: return "Academic Risk: Assign Extra Practice & Monitor"
+
+    df_smart['Intervention Recommendation'] = df_smart.apply(get_intervention, axis=1)
+
     # --- Interactive Filtering ---
     st.sidebar.header("🎯 Dashboard Filters")
     
@@ -183,17 +228,10 @@ if 'student_results' in st.session_state:
         st.divider()
 
         st.subheader("🔍 At-Risk Predictor & Recommendations")
-        # Risk Filter: < 75% attendance OR Unit Test 3 < 70
-        if 'Attendance (%)' in df_filtered.columns and 'Unit Test 3' in df_filtered.columns:
-            at_risk = df_filtered[(df_filtered['Attendance (%)'] < 75) | (df_filtered['Unit Test 3'] < 70)].copy()
-            
+        if 'Intervention Recommendation' in df_filtered.columns:
+            at_risk = df_filtered[df_filtered['Intervention Recommendation'] != 'On Track'].copy()
             if not at_risk.empty:
-                at_risk['Intervention Recommendation'] = at_risk.apply(
-                    lambda row: "Schedule Extra Doubt Session" if ('Doubt Asking Rate' in row and row['Doubt Asking Rate'] < 0.4) else "Focus & Homework Monitoring", axis=1
-                )
-                
-                # Reorder columns for display
-                avail_cols = [c for c in ['ID', 'Name', 'Class', 'Section', 'Subject', 'Attendance (%)', 'Unit Test 3', 'Avg Test Score', 'Engagement Index', 'Intervention Recommendation'] if c in at_risk.columns]
+                avail_cols = [c for c in ['ID', 'Name', 'Class', 'Section', 'Subject', 'Avg Test Score', 'Unit Test 3', 'Engagement Index', 'Intervention Recommendation'] if c in at_risk.columns]
                 st.dataframe(at_risk[avail_cols], use_container_width=True)
             else:
                 st.success("No students are currently marked as at-risk in this filtered view.")
@@ -205,21 +243,13 @@ if 'student_results' in st.session_state:
         col_chart1, col_chart2 = st.columns(2)
 
         with col_chart1:
-            st.subheader("📈 Attendance vs Rank Correlation")
-            if 'Attendance (%)' in df_filtered.columns and 'Rank' in df_filtered.columns and 'Section' in df_filtered.columns:
-                # Recalculate rank dynamically based on the filtered subset
-                df_filtered['Dynamic Rank'] = df_filtered['Rank'].rank(method='dense').astype(int)
-                
-                # Determine max rank for y-axis scaling
-                max_rank = df_filtered['Dynamic Rank'].max() if not df_filtered.empty else 1
-                
+            st.subheader("📈 Engagement vs Avg Score Correlation")
+            if 'Engagement Index' in df_filtered.columns and 'Avg Test Score' in df_filtered.columns and 'Section' in df_filtered.columns:
                 scatter_chart = alt.Chart(df_filtered).mark_circle(size=80).encode(
-                    x=alt.X('Attendance (%):Q', scale=alt.Scale(domain=[40, 100])),
-                    y=alt.Y('Dynamic Rank:Q', 
-                            scale=alt.Scale(reverse=True, domain=[1, max_rank]),
-                            axis=alt.Axis(tickMinStep=1, format='d')),
+                    x=alt.X('Engagement Index:Q', scale=alt.Scale(domain=[0, 100]), title='Engagement Index (out of 100)'),
+                    y=alt.Y('Avg Test Score:Q', scale=alt.Scale(domain=[0, 100]), title='Average Test Score (%)'),
                     color='Section:N',
-                    tooltip=[c for c in ['Name', 'Attendance (%)', 'Dynamic Rank', 'Section'] if c in df_filtered.columns]
+                    tooltip=[c for c in ['Name', 'Engagement Index', 'Avg Test Score', 'Section'] if c in df_filtered.columns]
                 ).interactive()
                 st.altair_chart(scatter_chart, use_container_width=True)
             else:
@@ -245,8 +275,8 @@ if 'student_results' in st.session_state:
         
         # Add Intervention Recommendation to main dataframe for download
         
-        # Custom sorting: Class DESC, Section ASC, Subject Custom, Name ASC
-        if all(col in df_filtered.columns for col in ['Class', 'Section', 'Subject', 'Name']):
+        # Custom sorting: Class DESC, Section ASC, Roll Number ASC, Subject Custom, Name ASC
+        if all(col in df_filtered.columns for col in ['Class', 'Section', 'Subject', 'Name', 'Roll Number']):
             # Create a categorical type for Subject to enforce custom order
             subject_order = ['Maths', 'Science', 'English', 'Language', 'Social', 'Arts', 'Physical']
             
@@ -258,6 +288,18 @@ if 'student_results' in st.session_state:
 
             df_filtered['Subject_Cat'] = pd.Categorical(df_filtered['Subject'], categories=subject_order, ordered=True)
             
+            df_filtered = df_filtered.sort_values(
+                by=['Class', 'Section', 'Roll Number', 'Subject_Cat', 'Name'],
+                ascending=[False, True, True, True, True]
+            )
+            df_filtered = df_filtered.drop(columns=['Subject_Cat'])
+        elif all(col in df_filtered.columns for col in ['Class', 'Section', 'Subject', 'Name']):
+            subject_order = ['Maths', 'Science', 'English', 'Language', 'Social', 'Arts', 'Physical']
+            existing_subjects = df_filtered['Subject'].dropna().unique().tolist()
+            for subj in existing_subjects:
+                if subj not in subject_order:
+                    subject_order.append(subj)
+            df_filtered['Subject_Cat'] = pd.Categorical(df_filtered['Subject'], categories=subject_order, ordered=True)
             df_filtered = df_filtered.sort_values(
                 by=['Class', 'Section', 'Subject_Cat', 'Name'],
                 ascending=[False, True, True, True]
@@ -274,8 +316,22 @@ if 'student_results' in st.session_state:
         
         st.markdown("**Select a student row below to view their detailed performance radar (Circular Potential Zones):**")
         
+        # Add Search Bar for Name or Roll Number
+        search_query = st.text_input("🔍 Search Student by Name or Roll Number:")
+        
+        df_display = df_download.copy()
+        if search_query:
+            search_query = str(search_query).lower()
+            if 'Roll Number' in df_display.columns:
+                df_display = df_display[
+                    df_display['Name'].str.lower().str.contains(search_query, na=False) | 
+                    df_display['Roll Number'].astype(str).str.contains(search_query, na=False)
+                ]
+            else:
+                df_display = df_display[df_display['Name'].str.lower().str.contains(search_query, na=False)]
+        
         event = st.dataframe(
-            df_download, 
+            df_display, 
             use_container_width=True, 
             selection_mode="single-row", 
             on_select="rerun", 
@@ -285,8 +341,8 @@ if 'student_results' in st.session_state:
         selected_rows = getattr(event, 'selection', event).rows if hasattr(getattr(event, 'selection', event), 'rows') else event.selection.rows # type: ignore
         if selected_rows:
             selected_idx = selected_rows[0]
-            if selected_idx < len(df_download):
-                student_data = df_download.iloc[selected_idx]
+            if selected_idx < len(df_display):
+                student_data = df_display.iloc[selected_idx]
                 
                 st.markdown("---")
                 st.subheader(f"🎯 Detailed View: {student_data.get('Name', 'Unknown')} ({student_data.get('Subject', 'Overall')})")
@@ -367,7 +423,47 @@ if 'student_results' in st.session_state:
                         st.write(f"**Subject:** {student_data.get('Subject', 'N/A')}")
                         st.write(f"**Rank:** {student_data.get('Rank', 'N/A')}")
                         st.write(f"**Engagement Index:** {student_data.get('Engagement Index', 0):.1f}/100")
-                        st.info(student_data.get('Intervention', 'On Track'))
+                        st.info(student_data.get('Intervention Recommendation', student_data.get('Intervention', 'On Track')))
+                    
+                    st.markdown("---")
+                    if st.button("✨ Generate AI Action Plan"):
+                        api_key = os.getenv("NVIDIA_API_KEY")
+                        if not api_key and hasattr(st, "secrets") and "nvidia_api_key" in st.secrets: api_key = st.secrets["nvidia_api_key"]
+                        if not api_key: st.error("NVIDIA API Key is missing. Please set NVIDIA_API_KEY in your environment or Streamlit secrets.")
+                        else:
+                            with st.spinner("Generating personalized AI Action Plan..."):
+                                try:
+                                    client = openai.OpenAI(api_key=api_key, base_url="https://integrate.api.nvidia.com/v1")
+                                    prompt = f"""You are an expert educational AI assistant.
+Generate a structured, organized action plan for the student {student_data.get('Name')} (Class {student_data.get('Class')}).
+Here are their current metrics:
+Attendance: {student_data.get('Attendance (%)', 'N/A')}%
+Avg Test Score: {student_data.get('Avg Test Score', 'N/A')}%
+Engagement Index: {student_data.get('Engagement Index', 0)}/100
+Intervention Status: {student_data.get('Intervention Recommendation', 'On Track')}
+
+Respond EXACTLY in this format (use emojis and bold text):
+🏷️ **Student Profile**
+Current Status: [Identify them briefly based on metrics]
+🌟 **Academic Standing**: [Brief comment on scores]
+
+💬 **Home Actions (For Parents)**
+- [Action 1: specific to their metrics]
+- [Action 2: specific to their metrics]
+- [Action 3: specific to their metrics]
+
+🏫 **School Actions (With Teachers)**
+- [Action 1: specific to their metrics]
+- [Action 2: specific to their metrics]
+- [Action 3: specific to their metrics]"""
+                                    response = client.chat.completions.create(
+                                        model="meta/llama-3.3-70b-instruct",
+                                        messages=[{"role": "user", "content": prompt}],
+                                        temperature=0.7, max_tokens=600
+                                    )
+                                    st.success("Plan Generated Successfully!")
+                                    st.markdown(response.choices[0].message.content)
+                                except Exception as e: st.error(f"Failed to generate AI plan: {e}")
                 else:
                     st.warning("Insufficient data to plot radar chart.")
         
