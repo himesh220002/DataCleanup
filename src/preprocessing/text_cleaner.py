@@ -7,7 +7,7 @@ class TextCleaner:
     """
     
     def __init__(self, df: pd.DataFrame):
-        self.df = df.copy()
+        self.df = df
 
     def tokenize(self, column: str) -> pd.DataFrame:
         """

@@ -7,7 +7,7 @@ class LabelCleaner:
     """
     
     def __init__(self, df: pd.DataFrame):
-        self.df = df.copy()
+        self.df = df
 
     def detect_label_errors(self, feature_columns: list, label_column: str, action='drop') -> pd.DataFrame:
         """

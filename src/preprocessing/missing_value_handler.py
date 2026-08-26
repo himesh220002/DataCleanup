@@ -5,7 +5,7 @@ class MissingValueHandler:
     A class to handle missing values using various strategies like dropping or imputation.
     """
     def __init__(self, df: pd.DataFrame):
-        self.df = df.copy()
+        self.df = df
         
     def drop_missing(self, axis=0, thresh=None, subset=None) -> pd.DataFrame:
         """

@@ -22,8 +22,9 @@ class DataIngestor:
     def load_csv(self, filepath: str, **kwargs) -> pd.DataFrame:
         """Load a CSV file into a pandas DataFrame."""
         path = self._get_full_path(filepath)
-        print(f"Loading CSV from: {path}")
-        return pd.read_csv(path, **kwargs)
+        import logging
+        logging.getLogger(__name__).info(f"Loading CSV from: {path}")
+        return pd.read_csv(path, engine='c', on_bad_lines='skip', **kwargs)
 
     def load_excel(self, filepath: str, **kwargs) -> pd.DataFrame:
         """Load an Excel file into a pandas DataFrame."""

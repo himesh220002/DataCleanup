@@ -10,7 +10,7 @@ class FeatureScaler:
     """
     
     def __init__(self, df: pd.DataFrame):
-        self.df = df.copy()
+        self.df = df
 
     def scale_features(self, 
                        columns: Optional[List[str]] = None, 

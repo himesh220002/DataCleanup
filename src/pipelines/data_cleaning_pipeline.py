@@ -91,19 +91,28 @@ class DataCleaningPipeline:
         # 8. Branch Outputs (Tag: UAT_dual_output_validation)
         logger.info("Branching outputs into ML-ready and Analyst-ready datasets...")
         
-        # ML-Ready: Drop _raw and _original
+        # -- ML-Ready --
         ml_cols = [c for c in df.columns if not c.endswith('_raw') and not c.endswith('_original')]
         df_ml = df[ml_cols].copy()
         df_ml.columns = [c.replace('_clean', '').replace('_scaled', '') for c in df_ml.columns]
         
-        # Analyst-Ready: Drop _clean and _scaled
+        ml_output_path = os.path.join(self.processed_data_dir, f"ml_{output_filename}")
+        df_ml.to_csv(ml_output_path, index=False)
+        ml_head = df_ml.head(20).copy()
+        del df_ml
+        
+        # -- Analyst-Ready --
         analyst_cols = [c for c in df.columns if not c.endswith('_clean') and not c.endswith('_scaled')]
         df_analyst = df[analyst_cols].copy()
         df_analyst.columns = [c.replace('_original', '').replace('_raw', '') for c in df_analyst.columns]
         
-        # 9. Smart-Ready Branch
+        analyst_output_path = os.path.join(self.processed_data_dir, f"analyst_{output_filename}")
+        df_analyst.to_csv(analyst_output_path, index=False)
+        analyst_head = df_analyst.head(20).copy()
+        
+        # -- Smart-Ready Branch --
         logger.info("Building Smart-Ready dataset with anomaly fixing...")
-        df_smart = df_analyst.copy()
+        df_smart = df_analyst  # Reuse Analyst-Ready in place, no need to copy again
         
         for col in df_smart.select_dtypes(include=['object', 'string']).columns.tolist(): # type: ignore
             # 1. Impute missing with mode instead of Unknown
@@ -134,17 +143,18 @@ class DataCleaningPipeline:
         new_order = id_cols + obj_cols + num_cols
         df_smart = df_smart[new_order]
 
-        # 10. Save Processed Data
-        ml_output_path = os.path.join(self.processed_data_dir, f"ml_{output_filename}")
-        analyst_output_path = os.path.join(self.processed_data_dir, f"analyst_{output_filename}")
         smart_output_path = os.path.join(self.processed_data_dir, f"smart_{output_filename}")
-        
-        df_ml.to_csv(ml_output_path, index=False)
-        df_analyst.to_csv(analyst_output_path, index=False)
         df_smart.to_csv(smart_output_path, index=False)
+        smart_head = df_smart.head(20).copy()
+        del df_smart
+        del df
+        
+        import gc
+        gc.collect()
+        
         logger.info(f"Pipeline complete! Saved to processed directory.")
         
-        return {"ml_ready": df_ml, "analyst_ready": df_analyst, "smart_ready": df_smart}
+        return {"ml_ready": ml_head, "analyst_ready": analyst_head, "smart_ready": smart_head}
 
 if __name__ == "__main__":
     # Provides a simple CLI execution path if run directly

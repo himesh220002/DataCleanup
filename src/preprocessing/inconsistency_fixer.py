@@ -10,7 +10,7 @@ class InconsistencyFixer:
     """
     
     def __init__(self, df: pd.DataFrame):
-        self.df = df.copy()
+        self.df = df
 
     def standardize_strings(self, columns: Optional[List[str]] = None, keep_original: bool = False) -> pd.DataFrame:
         """

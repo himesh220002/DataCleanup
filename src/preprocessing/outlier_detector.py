@@ -9,7 +9,7 @@ class OutlierDetector:
     """
     
     def __init__(self, df: pd.DataFrame):
-        self.df = df.copy()
+        self.df = df
 
     def handle_outliers_iqr(self, 
                             columns: Optional[List[str]] = None, 

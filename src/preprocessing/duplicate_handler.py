@@ -5,7 +5,7 @@ class DuplicateHandler:
     A class to handle exact and key-based duplicate rows in a DataFrame.
     """
     def __init__(self, df: pd.DataFrame):
-        self.df = df.copy()
+        self.df = df
         
     def drop_exact_duplicates(self, keep='first') -> pd.DataFrame:
         """
