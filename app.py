@@ -158,7 +158,6 @@ else:
             "Salary": ["$50,000", "60000", "50000", "70k"]
         })
         st.dataframe(mock_raw, width='stretch')
-        
     with col2:
         st.markdown("**2. Smart-Ready Data (Output)**")
         mock_clean = pd.DataFrame({
@@ -169,5 +168,4 @@ else:
         })
         st.dataframe(mock_clean, width='stretch')
         
-    st.markdown("### 🌟 Pipeline Features:")
     st.markdown("- **Deduplication:** Fuzzy matching and exact duplicate removal.\\n- **Anomaly Fixing:** Outlier detection and intelligent value replacement.\\n- **Normalization:** Standardizing formats like dates, text casing, and currencies.\\n- **Scaling:** Preparing numerical columns for machine learning algorithms.")
