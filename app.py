@@ -157,7 +157,7 @@ else:
             "Date": ["12/31/2022", "2023-01-01", "12-31-2022", "invalid"],
             "Salary": ["$50,000", "60000", "50000", "70k"]
         })
-        st.dataframe(mock_raw, use_container_width=True)
+        st.dataframe(mock_raw, width='stretch')
         
     with col2:
         st.markdown("**2. Smart-Ready Data (Output)**")
@@ -167,7 +167,7 @@ else:
             "Date": ["2022-12-31", "2023-01-01", "None"],
             "Salary": [50000.0, 60000.0, 70000.0]
         })
-        st.dataframe(mock_clean, use_container_width=True)
+        st.dataframe(mock_clean, width='stretch')
         
     st.markdown("### 🌟 Pipeline Features:")
     st.markdown("- **Deduplication:** Fuzzy matching and exact duplicate removal.\\n- **Anomaly Fixing:** Outlier detection and intelligent value replacement.\\n- **Normalization:** Standardizing formats like dates, text casing, and currencies.\\n- **Scaling:** Preparing numerical columns for machine learning algorithms.")

@@ -72,7 +72,7 @@ old_atrisk = """        # Risk Filter: < 75% attendance OR Unit Test 3 < 70
                 
                 # Reorder columns for display
                 avail_cols = [c for c in ['ID', 'Name', 'Class', 'Section', 'Subject', 'Attendance (%)', 'Unit Test 3', 'Avg Test Score', 'Engagement Index', 'Intervention Recommendation'] if c in at_risk.columns]
-                st.dataframe(at_risk[avail_cols], use_container_width=True)
+                st.dataframe(at_risk[avail_cols], width="stretch")
             else:
                 st.success("No students are currently marked as at-risk in this filtered view.")
         else:
@@ -82,7 +82,7 @@ new_atrisk = """        if 'Intervention Recommendation' in df_filtered.columns:
             at_risk = df_filtered[df_filtered['Intervention Recommendation'] != 'On Track'].copy()
             if not at_risk.empty:
                 avail_cols = [c for c in ['ID', 'Name', 'Class', 'Section', 'Subject', 'Avg Test Score', 'Unit Test 3', 'Engagement Index', 'Intervention Recommendation'] if c in at_risk.columns]
-                st.dataframe(at_risk[avail_cols], use_container_width=True)
+                st.dataframe(at_risk[avail_cols], width="stretch")
             else:
                 st.success("No students are currently marked as at-risk in this filtered view.")
         else:
@@ -170,11 +170,11 @@ old_tab2_start = """            if not df_download.empty and 'Name' in df_downlo
                     col_r1, col_r2, col_r3 = st.columns([1.5, 1.5, 1])
                     with col_r1:
                         st.markdown("**Personal Potential Zones**")
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, width="stretch")
                     with col_r2:
                         st.markdown("**Cross-Subject Scores**")
                         if fig_subj:
-                            st.plotly_chart(fig_subj, use_container_width=True)
+                            st.plotly_chart(fig_subj, width="stretch")
                         else:
                             st.info("No cross-subject data available.")
                     with col_r3:
@@ -261,10 +261,10 @@ new_tab2 = """            if not df_download.empty and 'Name' in df_download.col
                     col_r1, col_r2, col_r3 = st.columns([1.5, 1.5, 1])
                     with col_r1:
                         st.markdown("**Personal Potential Zones**")
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, width="stretch")
                     with col_r2:
                         st.markdown("**Cross-Subject Scores**")
-                        if fig_subj: st.plotly_chart(fig_subj, use_container_width=True)
+                        if fig_subj: st.plotly_chart(fig_subj, width="stretch")
                         else: st.info("No cross-subject data available.")
                     with col_r3:
                         st.write("### Quick Stats")
@@ -279,7 +279,7 @@ new_tab2 = """            if not df_download.empty and 'Name' in df_download.col
                     st.subheader("📚 All Subjects Breakdown")
                     table_cols = ['Subject', 'Attendance (%)', 'Unit Test 1', 'Unit Test 2', 'Unit Test 3', 'Half Yearly', 'Avg Test Score', 'Engagement Index']
                     avail_table_cols = [c for c in table_cols if c in all_student_rows.columns]
-                    st.dataframe(all_student_rows[avail_table_cols], use_container_width=True, hide_index=True)
+                    st.dataframe(all_student_rows[avail_table_cols], width="stretch", hide_index=True)
                     st.markdown("---")
                     
                     all_subjects_df = all_student_rows.copy()

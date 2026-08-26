@@ -31,7 +31,7 @@ old_selection = '''        st.markdown("**Select a student row below to view the
         
         event = st.dataframe(
             df_download, 
-            use_container_width=True, 
+            width="stretch", 
             selection_mode="single-row", 
             on_select="rerun", 
             key="student_selection"
