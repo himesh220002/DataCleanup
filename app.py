@@ -33,7 +33,7 @@ is_processed = False
 file_path = None
 
 # Always display upload option on the main page
-uploaded_file = st.file_uploader("Upload a new dataset (CSV/Excel)", type=["csv", "xlsx"])
+uploaded_file = st.file_uploader("Upload a new dataset (CSV/Excel/JSON)", type=["csv", "xlsx", "json"])
 
 if uploaded_file is not None:
     file_path = os.path.join(raw_dir, uploaded_file.name)
@@ -42,7 +42,7 @@ if uploaded_file is not None:
     target_filename = uploaded_file.name
     st.success(f"File {uploaded_file.name} uploaded successfully!")
 elif source_type == "Raw Data":
-    raw_files = [f for f in os.listdir(raw_dir) if f.endswith(('.csv', '.xlsx'))]
+    raw_files = [f for f in os.listdir(raw_dir) if f.endswith(('.csv', '.xlsx', '.json'))]
     if raw_files:
         target_filename = st.sidebar.selectbox("Select Raw File", raw_files)
         if target_filename:
@@ -50,7 +50,7 @@ elif source_type == "Raw Data":
     else:
         st.sidebar.warning("No raw files found.")
 elif source_type == "Processed Data":
-    proc_files = [f for f in os.listdir(proc_dir) if f.endswith(('.csv', '.xlsx'))]
+    proc_files = [f for f in os.listdir(proc_dir) if f.endswith(('.csv', '.xlsx', '.json'))]
     if proc_files:
         target_filename = st.sidebar.selectbox("Select Processed File", proc_files)
         if target_filename:
@@ -62,6 +62,9 @@ elif source_type == "Processed Data":
 if file_path and target_filename:
     if target_filename.endswith('.csv'):
         df_display = pd.read_csv(file_path, nrows=20)
+    elif target_filename.endswith('.json'):
+        df_display = pd.read_json(file_path)
+        df_display = df_display.head(20)
     else:
         df_display = pd.read_excel(file_path, nrows=20)
         
@@ -76,11 +79,15 @@ if file_path and target_filename:
                 date_columns = [c.strip() for c in date_cols_input.split(',')] if date_cols_input else None
                 
                 # Execute pipeline
+                # Ensure output has .csv extension regardless of input
+                base_name = os.path.splitext(target_filename)[0]
+                output_filename = f"clean_{base_name}.csv"
+                
                 clean_results = pipeline.run_pipeline(
                     filename=target_filename,
                     date_columns=date_columns,
                     scale_method=scale_method,
-                    output_filename=f"clean_{target_filename}"
+                    output_filename=output_filename
                 )
                 
                 # Save to session state so downloading doesn't clear the results
@@ -96,6 +103,8 @@ if file_path and target_filename:
     if 'clean_results' in st.session_state:
         clean_results = st.session_state['clean_results']
         filename = st.session_state['uploaded_filename']
+        base_name = os.path.splitext(filename)[0]
+        csv_filename = f"{base_name}.csv"
         
         df_ml = clean_results['ml_ready']
         df_analyst = clean_results['analyst_ready']
@@ -103,46 +112,46 @@ if file_path and target_filename:
         
         st.subheader("🧠 ML-Ready Data Preview")
         st.markdown("Features are scaled, normalized, and optimized for model training.")
-        st.dataframe(df_ml.head())
+        st.dataframe(df_ml)
         
         st.subheader("📊 Analyst-Ready Data Preview")
         st.markdown("Features retain original scale, human-readable casing, and untampered identifiers.")
-        st.dataframe(df_analyst.head())
+        st.dataframe(df_analyst)
         
         st.subheader("✨ Smart-Ready Data Preview")
         st.markdown("Anomalies are fixed intelligently, missing values are imputed with useful values, and columns are logically rearranged.")
-        st.dataframe(df_smart.head())
+        st.dataframe(df_smart)
         
         # Generate Download Links
         col1, col2, col3 = st.columns(3)
         with col1:
-            ml_path = os.path.join(proc_dir, f"ml_clean_{filename}")
+            ml_path = os.path.join(proc_dir, f"ml_clean_{csv_filename}")
             if os.path.exists(ml_path):
                 with open(ml_path, "rb") as f:
                     st.download_button(
                         label="📥 Download ML-Ready Dataset",
                         data=f,
-                        file_name=f"ml_ready_{filename}",
+                        file_name=f"ml_ready_{csv_filename}",
                         mime="text/csv",
                     )
         with col2:
-            analyst_path = os.path.join(proc_dir, f"analyst_clean_{filename}")
+            analyst_path = os.path.join(proc_dir, f"analyst_clean_{csv_filename}")
             if os.path.exists(analyst_path):
                 with open(analyst_path, "rb") as f:
                     st.download_button(
                         label="📥 Download Analyst-Ready Dataset",
                         data=f,
-                        file_name=f"analyst_ready_{filename}",
+                        file_name=f"analyst_ready_{csv_filename}",
                         mime="text/csv",
                     )
         with col3:
-            smart_path = os.path.join(proc_dir, f"smart_clean_{filename}")
+            smart_path = os.path.join(proc_dir, f"smart_clean_{csv_filename}")
             if os.path.exists(smart_path):
                 with open(smart_path, "rb") as f:
                     st.download_button(
                         label="📥 Download Smart-Ready Dataset",
                         data=f,
-                        file_name=f"smart_ready_{filename}",
+                        file_name=f"smart_ready_{csv_filename}",
                         mime="text/csv",
                     )
             
