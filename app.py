@@ -61,12 +61,12 @@ elif source_type == "Processed Data":
 
 if file_path and target_filename:
     if target_filename.endswith('.csv'):
-        df_display = pd.read_csv(file_path)
+        df_display = pd.read_csv(file_path, nrows=20)
     else:
-        df_display = pd.read_excel(file_path)
+        df_display = pd.read_excel(file_path, nrows=20)
         
     st.subheader(f"{'Processed' if is_processed else 'Raw'} Data Preview")
-    st.dataframe(df_display.head(20))
+    st.dataframe(df_display)
     
     if not is_processed:
         if st.button("🚀 Run Data Cleaning Pipeline"):
@@ -84,7 +84,12 @@ if file_path and target_filename:
                 )
                 
                 # Save to session state so downloading doesn't clear the results
-                st.session_state['clean_results'] = clean_results
+                # Store only head() to save memory
+                st.session_state['clean_results'] = {
+                    'ml_ready': clean_results['ml_ready'].head(20),
+                    'analyst_ready': clean_results['analyst_ready'].head(20),
+                    'smart_ready': clean_results['smart_ready'].head(20)
+                }
                 st.session_state['uploaded_filename'] = target_filename
                 st.rerun()
 
@@ -111,29 +116,35 @@ if file_path and target_filename:
         # Generate Download Links
         col1, col2, col3 = st.columns(3)
         with col1:
-            csv_ml = df_ml.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="📥 Download ML-Ready Dataset",
-                data=csv_ml,
-                file_name=f"ml_ready_{filename}",
-                mime="text/csv",
-            )
+            ml_path = os.path.join(proc_dir, f"ml_clean_{filename}")
+            if os.path.exists(ml_path):
+                with open(ml_path, "rb") as f:
+                    st.download_button(
+                        label="📥 Download ML-Ready Dataset",
+                        data=f,
+                        file_name=f"ml_ready_{filename}",
+                        mime="text/csv",
+                    )
         with col2:
-            csv_analyst = df_analyst.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="📥 Download Analyst-Ready Dataset",
-                data=csv_analyst,
-                file_name=f"analyst_ready_{filename}",
-                mime="text/csv",
-            )
+            analyst_path = os.path.join(proc_dir, f"analyst_clean_{filename}")
+            if os.path.exists(analyst_path):
+                with open(analyst_path, "rb") as f:
+                    st.download_button(
+                        label="📥 Download Analyst-Ready Dataset",
+                        data=f,
+                        file_name=f"analyst_ready_{filename}",
+                        mime="text/csv",
+                    )
         with col3:
-            csv_smart = df_smart.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="📥 Download Smart-Ready Dataset",
-                data=csv_smart,
-                file_name=f"smart_ready_{filename}",
-                mime="text/csv",
-            )
+            smart_path = os.path.join(proc_dir, f"smart_clean_{filename}")
+            if os.path.exists(smart_path):
+                with open(smart_path, "rb") as f:
+                    st.download_button(
+                        label="📥 Download Smart-Ready Dataset",
+                        data=f,
+                        file_name=f"smart_ready_{filename}",
+                        mime="text/csv",
+                    )
             
         st.success("Pipeline Execution Complete!")
         
